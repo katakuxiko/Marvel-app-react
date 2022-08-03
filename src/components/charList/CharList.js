@@ -1,7 +1,10 @@
-import MarvelService from '../../services/MarvelService';
 import {Component} from 'react';
+import PropTypes from 'prop-types';
+
+import MarvelService from '../../services/MarvelService';
 import Spinner from '../spinner/Spinner';
 import ErrorMessage from '../errorMessage/ErrorMessage';
+
 import './charList.scss';
 
 
@@ -10,21 +13,40 @@ class CharList extends Component {
      state = {
         charList: [],
         loading: true,
-        error: false
+        error: false,
+        newItemloading: false,
+        offset:1541,
+        charEnded: false,
     }
     marvelService = new MarvelService();
 
    componentDidMount() {
-        this.marvelService.getAllCharacters()
+       this.onRequest();
+    }
+
+    onRequest = (offset)=>{
+        this.onCharListLoading();
+        this.marvelService.getAllCharacters(offset)
             .then(this.onCharListLoaded)
             .catch(this.onError)
     }
+    onCharListLoading = ()=>{
+        this.setState({newItemloading: true});
+    }
 
-     onCharListLoaded = (charList) => {
-        this.setState({
-            charList,
-            loading: false
-        })
+     onCharListLoaded = (newCharList) => {
+        let ended = false;
+        if(newCharList.length < 9 ){
+            ended = true;
+        }
+
+        this.setState(({offset,charList})=>({
+            charList: [...charList, ...newCharList],
+            loading: false,
+            newItemloading: false,
+            offset: offset+9,
+            charEnded:ended
+        }))
     }
 
     onError = () => {
@@ -40,7 +62,7 @@ class CharList extends Component {
             return(
                  <li key={item.id}
                     className="char__item"
-                    >
+                   onClick={()=> this.props.onCharSelected(item.id)} >
                         <img src={item.thumbnail} alt={item.name} style={objectFit}/>
                         <div className="char__name">{item.name}</div>
                 </li>
@@ -55,7 +77,7 @@ class CharList extends Component {
     
     render() {
 
-        const {charList, loading, error} = this.state;
+        const {charList, loading, error,newItemloading, offset,charEnded} = this.state;
         const items = this.renderItems(charList);
         const errorMessage = error ? <ErrorMessage/> : null;
         const spinner = loading ? <Spinner/> : null;
@@ -66,12 +88,23 @@ class CharList extends Component {
             {errorMessage}
             {spinner}
             {content}
-            <button className="button button__main button__long">
+            <button 
+            style={{"display": charEnded ? 'none' : 'block'}}
+            className="button button__main button__long"
+            disabled={newItemloading}
+            onClick={()=> this.onRequest(offset)}
+            >
                 <div className="inner">load more</div>
             </button>
         </div>
     )
     }
 }
+
+CharList.propTypes = {
+    onCharSelected: PropTypes.func.isRequired
+}
+
+
 
 export default CharList;
