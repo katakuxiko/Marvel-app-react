@@ -1,77 +1,63 @@
-import {Component} from 'react';
+import {useState,useEffect,useRef} from 'react';
 import PropTypes from 'prop-types';
 
-import MarvelService from '../../services/MarvelService';
+import useMarvelService from '../../services/MarvelService';
 import Spinner from '../spinner/Spinner';
 import ErrorMessage from '../errorMessage/ErrorMessage';
 
 import './charList.scss';
 
 
-class CharList extends Component {
+const CharList = (props) =>{
 
-     state = {
-        charList: [],
-        loading: true,
-        error: false,
-        newItemloading: false,
-        offset:210,
-        charEnded: false,
-    }
-    marvelService = new MarvelService();
+    const [charList, setCharlist] = useState([]);
+    const [newItemLoading, setNewItemLoading] = useState(false);
+    const [offset, setOffset] = useState(210);
+    const [charEnded, setCharEnded] = useState(false);
+   
+    const {loading,error,getAllCharacters} =  useMarvelService();
 
-   componentDidMount() {
-       this.onRequest();
-    }
+    useEffect(() => {
+        onRequest(offset,true);
+    }, []);
 
-    onRequest = (offset)=>{
-        this.onCharListLoading();
-        this.marvelService.getAllCharacters(offset)
-            .then(this.onCharListLoaded)
-            .catch(this.onError)
+    const onRequest = (offset, initial)=>{
+        initial ? setNewItemLoading(false):setNewItemLoading(true);
+        getAllCharacters(offset)
+            .then(onCharListLoaded)
     }
-    onCharListLoading = ()=>{
-        this.setState({newItemloading: true});
-    }
+    
 
-     onCharListLoaded = (newCharList) => {
+    const onCharListLoaded = (newCharList) => {
         let ended = false;
         if(newCharList.length < 9 ){
             ended = true;
         }
 
-        this.setState(({offset,charList})=>({
-            charList: [...charList, ...newCharList],
-            loading: false,
-            newItemloading: false,
-            offset: offset+9,
-            charEnded:ended
-        }))
+        setCharlist(charList=>[...charList, ...newCharList]);
+        setNewItemLoading(newItemloading => false);
+        setOffset(offset=> offset+9);
+        setCharEnded(charEnded=> ended);
     }
 
-    onError = () => {
-        this.setState({
-            error: true,
-            loading: false
-        })
-    }
-    renderItems(arr){
+
+    function renderItems(arr){
         const items = arr.map((item,i) => {
             const objectFit = item.thumbnail===`http://i.annihil.us/u/prod/marvel/i/mg/b/40/image_not_available.jpg`? {objectFit:'contain'}:{objectFit:'cover'} ;
 
             return(
                  <li key={item.id}
                     tabIndex={0}
-                    ref={this.setRef}
+                    ref={el => itemRefs.current[i]=el}
                     className="char__item"
                     onClick={()=> {
-                    this.props.onCharSelected(item.id);
-                    this.focusOnItem(i);
+                    props.onCharSelected(item.id);
+                    focusOnItem(i);
                     }} 
                     onKeyPress={(e) => {
                         if (e.key === ' ' || e.key === "Enter") {
-                            this.props.onCharSelected(item.id);
-                            this.focusOnItem(i);
+                            props.onCharSelected(item.id);
+                            focusOnItem(i);
                         }
                     }}>
                         <img src={item.thumbnail} alt={item.name} style={objectFit}/>
@@ -85,50 +71,37 @@ class CharList extends Component {
             </ul>
         )
     }
-    itemRefs  =[]
+    
+    const itemRefs  = useRef([]);
 
-    setRef=(ref)=>{
-        this.itemRefs.push(ref)
+
+    const focusOnItem = (id) => {
+        itemRefs.current.forEach(item => item.classList.remove('char__item_selected'));
+        itemRefs.current[id].classList.add('char__item_selected');
+        itemRefs.current[id].focus();
     }
+     
 
-        focusOnItem = (id) => {
-        // Я реализовал вариант чуть сложнее, и с классом и с фокусом
-        // Но в теории можно оставить только фокус, и его в стилях использовать вместо класса
-        // На самом деле, решение с css-классом можно сделать, вынеся персонажа
-        // в отдельный компонент. Но кода будет больше, появится новое состояние
-        // и не факт, что мы выиграем по оптимизации за счет бОльшего кол-ва элементов
-
-        // По возможности, не злоупотребляйте рефами, только в крайних случаях
-        this.itemRefs.forEach(item => item.classList.remove('char__item_selected'));
-        this.itemRefs[id].classList.add('char__item_selected');
-        this.itemRefs[id].focus();
-    }
-
-    render() {
-
-        const {charList, loading, error,newItemloading, offset,charEnded} = this.state;
-        const items = this.renderItems(charList);
+        const items = renderItems(charList);
         const errorMessage = error ? <ErrorMessage/> : null;
-        const spinner = loading ? <Spinner/> : null;
-        const content = !(loading || error) ? items : null
-
+        const spinner = loading&&!newItemLoading ? <Spinner/> : null;
         return (
         <div className="char__list">
             {errorMessage}
             {spinner}
-            {content}
+            {items}
             <button 
             style={{"display": charEnded ? 'none' : 'block'}}
             className="button button__main button__long"
-            disabled={newItemloading}
-            onClick={()=> this.onRequest(offset)}
+            disabled={newItemLoading}
+            onClick={()=> onRequest(offset)}
             >
                 <div className="inner">load more</div>
             </button>
         </div>
     )
     }
-}
+
 
 CharList.propTypes = {
     onCharSelected: PropTypes.func.isRequired
