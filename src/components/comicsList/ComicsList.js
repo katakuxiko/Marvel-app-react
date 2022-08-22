@@ -1,5 +1,6 @@
 import {useState,useEffect} from 'react'
 import { Link } from 'react-router-dom';
+import {CSSTransition, TransitionGroup} from 'react-transition-group';
 
 import useMarvelService from '../../services/MarvelService';
 import './comicsList.scss';
@@ -40,6 +41,7 @@ const ComicsList = () => {
         const items= arr.map((item,i)=>{
             const objectFit = item.thumbnail===`http://i.annihil.us/u/prod/marvel/i/mg/b/40/image_not_available.jpg`? {objectFit:'contain'}:{objectFit:'cover'} ;
             return(
+                <CSSTransition classNames='comics__item' timeout={1500} key={item.id}>
                  <li key={i} className="comics__item">
                     <Link to={`/comics/${item.id}`} href="#">
                         <img style={objectFit} src={item.thumbnail} alt="ultimate war" className="comics__item-img"/>
@@ -47,12 +49,15 @@ const ComicsList = () => {
                         <div className="comics__item-price">{item.price}</div>
                     </Link>
                 </li>
+                </CSSTransition>
             )
 
         })
         return(
             <ul className="comics__grid">
+                <TransitionGroup component={null}>
                 {items}
+                </TransitionGroup>
             </ul>
         )
     }

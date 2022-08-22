@@ -1,6 +1,6 @@
 import {useState,useEffect,useRef} from 'react';
 import PropTypes from 'prop-types';
-
+import {CSSTransition, TransitionGroup} from 'react-transition-group';
 import useMarvelService from '../../services/MarvelService';
 import Spinner from '../spinner/Spinner';
 import ErrorMessage from '../errorMessage/ErrorMessage';
@@ -46,7 +46,8 @@ const CharList = (props) =>{
             const objectFit = item.thumbnail===`http://i.annihil.us/u/prod/marvel/i/mg/b/40/image_not_available.jpg`? {objectFit:'contain'}:{objectFit:'cover'} ;
 
             return(
-                 <li key={item.id}
+                 <CSSTransition classNames='char__item' timeout={1500} key={item.id}>
+                    <li key={item.id}
                     tabIndex={0}
                     ref={el => itemRefs.current[i]=el}
                     className="char__item"
@@ -63,12 +64,16 @@ const CharList = (props) =>{
                         <img src={item.thumbnail} alt={item.name} style={objectFit}/>
                         <div className="char__name">{item.name}</div>
                 </li>
+                 </CSSTransition>
             )
         })
         return (
-             <ul className="char__grid">
-                {items}
-            </ul>
+                <ul className="char__grid">
+                <TransitionGroup component={null}>
+                    {items}  
+                </TransitionGroup>
+                </ul>
+
         )
     }
     
