@@ -11,6 +11,7 @@ import CharSearchForm from '../charSearchForm/CharSearchForm';
 import decoration from '../../resources/img/vision.png';
 
 const MainPage = ()=>{
+    console.log('MP')
 	const [selectedChar, setSelectedChar] = useState(null);
     const onCharSelected = (id)=>{
         setSelectedChar(id);
